@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>External Genital Homology: Morphological Differentiation from Bipotential Primordium (Week 7)</title>
+<meta name="description" content="Interactive 3D embryology visualization of human external genitalia homology: bipotential primordial genitalia at gestational Week 7 differentiating along the 46,XX and 46,XY (DHT-mediated) pathways.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ======================= DESIGN TOKENS ======================= */
+:root{
+  --bg:#0b1020; --panel:rgba(15,22,41,.62); --panel-solid:rgba(11,16,32,.95);
+  --border:rgba(148,163,184,.18); --border-hi:rgba(148,163,184,.38);
+  --text:#e2e8f0; --muted:#94a3b8; --dim:#64748b; --accent:#8B5CF6; --cyan:#38bdf8;
+  --c-tub:#8B5CF6; --c-fold:#F59E0B; --c-swell:#10B981; --c-sinus:#475569;
+  --a-tub:#E9BBA3; --a-fold:#D9958A; --a-swell:#E3B09A; --a-sinus:#6b2f35;
+  --r-sm:8px; --r-md:12px; --r-lg:16px;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --glass:blur(14px) saturate(140%);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;
+  display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+/* ======================= HEADER ======================= */
+header{height:58px;flex:none;padding:0 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:rgba(7,10,19,.85);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);
+  border-bottom:1px solid var(--border);z-index:40}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-logo{width:32px;height:32px;border-radius:9px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(135deg,#8B5CF6,#38bdf8);box-shadow:0 2px 12px rgba(139,92,246,.45)}
+.brand-logo svg{width:18px;height:18px}
+h1{font-size:.92rem;font-weight:600;letter-spacing:-.01em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.subtitle{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand-text{min-width:0}
+.header-actions{display:flex;align-items:center;gap:10px;flex:none}
+.seg{display:flex;background:rgba(15,23,42,.75);border:1px solid var(--border);border-radius:30px;padding:3px;gap:2px}
+.seg button{background:transparent;border:0;border-radius:24px;padding:5px 13px;font-size:.74rem;font-weight:500;
+  color:var(--muted);transition:all .25s var(--ease);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.seg button.active{background:rgba(255,255,255,.14);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.ghost-btn{background:rgba(15,23,42,.6);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--muted);
+  font-size:.75rem;padding:6px 11px;display:inline-flex;align-items:center;gap:6px;transition:all .25s var(--ease);white-space:nowrap}
+.ghost-btn:hover{background:rgba(30,41,59,.85);color:var(--text);border-color:var(--border-hi);transform:translateY(-1px)}
+.ghost-btn.on{color:var(--cyan);border-color:var(--cyan)}
+
+/* ======================= WORKSPACE ======================= */
+main{flex:1;display:flex;position:relative;min-height:0}
+#viewport{flex:1;position:relative;min-width:0;overflow:hidden;
+  background:radial-gradient(circle at 50% 40%,#18213d 0%,#0b1020 62%,#05070f 100%);transition:background .5s ease}
+#viewport.atlas{background:radial-gradient(circle at 50% 40%,#d8cfc0 0%,#bfb4a2 62%,#a79d8c 100%)}
+canvas{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+canvas:active{cursor:grabbing}
+#gl-error{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:24px;color:#fca5a5;z-index:50;font-weight:500}
+
+.glass{background:var(--panel);backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);
+  border:1px solid var(--border);border-radius:var(--r-md);box-shadow:0 12px 36px rgba(0,0,0,.4)}
+
+/* top-left status */
+.hud-tl{position:absolute;top:16px;left:16px;z-index:20;display:flex;flex-direction:column;gap:8px;max-width:min(470px,calc(100% - 32px));pointer-events:none}
+.stage-card{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:10px 14px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--c-tub);box-shadow:0 0 10px currentColor;color:var(--c-tub);transition:all .4s ease}
+.stage-title{font-size:.82rem;font-weight:600;color:#fff;line-height:1.25;transition:opacity .25s}
+.stage-sub{font-size:.68rem;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.pct{margin-left:auto;flex:none;font-size:.66rem;font-weight:600;letter-spacing:.05em;background:rgba(255,255,255,.1);
+  padding:2px 9px;border-radius:12px;color:var(--cyan);font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace}
+.info-card{pointer-events:auto;display:none;flex-direction:column;gap:3px;padding:8px 13px;font-size:.72rem;border-color:var(--cyan)}
+.info-card.show{display:flex;animation:fadeIn .2s ease}
+.info-card .t{font-weight:600;color:#fff;display:flex;align-items:center;gap:7px}
+.info-card .chip{width:11px;height:11px;border-radius:3px}
+.info-card .d{color:var(--muted);line-height:1.4}
+.info-card .d b{color:var(--text)}
+.info-card .d b.now{color:var(--cyan)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* legend */
+.legend{position:absolute;left:16px;bottom:128px;z-index:20;width:316px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.legend-head{display:flex;align-items:center;justify-content:space-between;background:none;border:0;width:100%;text-align:left;padding:2px 0 6px;
+  border-bottom:1px solid rgba(148,163,184,.14)}
+.legend-head span:first-child{font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.legend-head .hint{font-size:.62rem;color:var(--dim)}
+.legend.collapsed .legend-list{display:none}
+.legend-list{display:flex;flex-direction:column;gap:4px}
+.lrow{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:var(--r-sm);border:1px solid transparent;background:rgba(255,255,255,.03);
+  text-align:left;width:100%;transition:all .25s var(--ease)}
+.lrow:hover{background:rgba(255,255,255,.09);border-color:var(--border-hi);transform:translateX(2px)}
+.lrow.active{background:rgba(139,92,246,.2);border-color:var(--cyan);box-shadow:0 0 12px rgba(56,189,248,.25)}
+.chips{display:flex;gap:3px;flex:none}
+.chip{width:12px;height:12px;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.4);display:block}
+.chip.atl{display:none;width:8px;border-radius:2px}
+body.atlas-on .chip.atl{display:block}
+.lname{font-size:.73rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lder{font-size:.67rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow.active .lder{color:var(--cyan)}
+.ltxt{min-width:0;display:flex;flex-direction:column}
+
+/* labels overlay */
+#labels{position:absolute;inset:0;pointer-events:none;z-index:15;opacity:0;transition:opacity .3s}
+#labels.show{opacity:1}
+#leaders{position:absolute;inset:0;width:100%;height:100%}
+.leader{stroke:rgba(226,232,240,.7);stroke-width:1.2;stroke-dasharray:3 3}
+.ldot{fill:#e2e8f0}
+#viewport.atlas .leader{stroke:rgba(46,24,24,.7)}
+#viewport.atlas .ldot{fill:#2e1818}
+.lbl{position:absolute;left:0;top:0;pointer-events:auto;background:rgba(255,255,255,.9);border:1px solid rgba(46,24,24,.4);
+  padding:4px 10px;border-radius:5px;font-size:.68rem;font-weight:600;color:#2e1818;box-shadow:0 2px 8px rgba(0,0,0,.2);
+  white-space:nowrap;cursor:pointer;will-change:transform}
+.lbl:hover{background:#fff;border-color:var(--accent)}
+.ruler{position:absolute;left:10px;top:50%;transform:translateY(-50%);height:220px;display:none;flex-direction:column;justify-content:space-between;
+  border-right:1px solid rgba(71,85,105,.5);padding-right:5px;font:.6rem 'JetBrains Mono',monospace;color:rgba(71,85,105,.9);text-align:right;pointer-events:none;z-index:12}
+body.atlas-on .ruler{display:flex}
+
+/* playback dock */
+.dock{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:min(860px,calc(100% - 28px));z-index:25;padding:10px 16px;
+  display:flex;flex-direction:column;gap:10px;border-radius:var(--r-lg)}
+.dock-top{display:flex;align-items:center;gap:12px}
+.round{border-radius:50%;display:grid;place-items:center;flex:none;transition:all .25s var(--ease)}
+.play{width:40px;height:40px;border:0;background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;box-shadow:0 4px 14px rgba(99,102,241,.45)}
+.play:hover{transform:scale(1.07);box-shadow:0 6px 22px rgba(99,102,241,.65)}
+.play svg,.loopb svg{width:16px;height:16px;fill:currentColor}
+.loopb{width:34px;height:34px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted)}
+.loopb.on{background:rgba(56,189,248,.18);color:var(--cyan);border-color:var(--cyan)}
+.scrub{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.16);outline-offset:6px;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;border:2px solid var(--accent);
+  box-shadow:0 0 10px rgba(139,92,246,.85);transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-shadow:0 0 10px rgba(139,92,246,.85)}
+.ticks{position:relative;height:14px;font-size:.62rem;color:var(--dim);font-weight:500}
+.ticks button{position:absolute;top:0;background:none;border:0;font-size:inherit;color:inherit;padding:0 2px;white-space:nowrap;transform:translateX(-50%);transition:color .2s}
+.ticks button:first-child{transform:none}
+.ticks button:last-child{transform:translateX(-100%)}
+.ticks button:hover,.ticks button.on{color:#fff}
+.stages{display:flex;gap:8px;padding-top:8px;border-top:1px solid rgba(148,163,184,.12)}
+.stg{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 8px;font-size:.72rem;font-weight:500;
+  color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;transition:all .25s var(--ease);white-space:nowrap}
+.stg:hover{background:rgba(255,255,255,.1);color:var(--text);transform:translateY(-1px)}
+.stg.active{background:rgba(139,92,246,.2);color:#fff;border-color:var(--accent);box-shadow:0 0 10px rgba(139,92,246,.3)}
+.stg i{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+/* ======================= SIDE PANEL ======================= */
+aside{width:380px;flex:none;position:relative;background:var(--panel-solid);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-left:1px solid var(--border);z-index:30;transition:width .35s var(--ease),transform .35s var(--ease)}
+aside.collapsed{width:0;border-left-color:transparent}
+.inner{height:100%;width:380px;overflow-y:auto;padding:20px 20px 40px;display:flex;flex-direction:column;gap:14px}
+aside.collapsed .inner{visibility:hidden}
+.inner::-webkit-scrollbar{width:5px}
+.inner::-webkit-scrollbar-thumb{background:rgba(148,163,184,.25);border-radius:3px}
+.ptab{position:absolute;top:50%;left:-32px;transform:translateY(-50%);width:32px;height:56px;background:var(--panel-solid);border:1px solid var(--border);
+  border-right:0;border-radius:9px 0 0 9px;display:grid;place-items:center;color:var(--muted);z-index:35}
+.ptab:hover{color:#fff}
+.ptab svg{width:16px;height:16px;transition:transform .3s}
+aside.collapsed .ptab svg{transform:rotate(180deg)}
+h2{font-size:1.02rem;font-weight:700;color:#fff;letter-spacing:-.01em}
+.pdesc{font-size:.76rem;color:var(--muted);line-height:1.5;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.acc{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
+.acc>button{width:100%;background:none;border:0;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;
+  font-size:.8rem;font-weight:600;color:#fff;text-align:left}
+.acc>button svg{width:14px;height:14px;transition:transform .25s}
+.acc.open>button svg{transform:rotate(180deg)}
+.acc-body{max-height:0;overflow:hidden;padding:0 14px;font-size:.74rem;line-height:1.55;color:var(--muted);transition:max-height .35s var(--ease)}
+.acc.open .acc-body{max-height:1400px;padding-bottom:14px}
+.acc-body p{margin-top:6px}
+.acc-body strong{color:var(--text)}
+table{width:100%;border-collapse:collapse;font-size:.67rem;margin-top:10px}
+th{text-align:left;padding:6px 4px;color:var(--dim);border-bottom:1px solid var(--border);font-weight:600}
+td{padding:6px 4px;border-bottom:1px solid rgba(148,163,184,.08);color:var(--text);vertical-align:top}
+tr.hl td{background:rgba(139,92,246,.18);color:#fff}
+td .tchip{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.step{border-left:2px solid var(--cyan);padding:6px 10px;margin-top:8px;background:rgba(255,255,255,.025);border-radius:0 5px 5px 0}
+.step.f{border-left-color:#EC4899}
+.callout{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:var(--r-sm);padding:8px 10px;margin-top:8px}
+.callout h5{color:#f87171;font-size:.72rem;margin-bottom:3px}
+.tissue-desc{border-left:3px solid var(--c);padding:2px 0 2px 10px;margin-top:10px}
+.tissue-desc h5{color:#fff;font-size:.74rem}
+.notice{font-size:.66rem;color:var(--dim);line-height:1.45;padding:10px;border:1px dashed rgba(148,163,184,.2);border-radius:var(--r-sm)}
+
+/* ======================= RESPONSIVE ======================= */
+@media (max-width:900px){
+  aside{position:absolute;left:0;right:0;bottom:0;width:100%;height:58%;border-left:0;border-top:1px solid var(--border);box-shadow:0 -10px 30px rgba(0,0,0,.6)}
+  aside.collapsed{width:100%;transform:translateY(100%);border-top-color:transparent}
+  aside.collapsed .inner{visibility:visible}
+  .inner{width:100%}
+  .ptab{left:50%;top:-30px;transform:translateX(-50%) rotate(90deg);transform-origin:center}
+  .legend{width:260px}
+}
+@media (max-width:700px){
+  header{padding:0 12px}
+  .subtitle,.ghost-btn span{display:none}
+  h1{font-size:.8rem}
+  .seg button{padding:5px 9px;font-size:.68rem}
+  .dock{padding:8px 10px;gap:8px}
+  .stages{flex-wrap:wrap;gap:6px}
+  .stg{font-size:.66rem;padding:5px 6px;flex:1 1 30%}
+  .legend{bottom:176px;width:230px}
+  .legend:not(.userOpen) .legend-list{display:none}
+  .legend .hint{display:none}
+  .hud-tl{top:10px;left:10px}
+  .ticks{font-size:.56rem}
+}
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg></div>
+    <div class="brand-text">
+      <h1>External Genital Morphogenesis &amp; Anatomical Homology</h1>
+      <div class="subtitle">Bipotential primordium (Gestational Week 7) &rarr; 46,XX / 46,XY differentiation</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div class="seg" role="group" aria-label="Rendering style">
+      <button id="btn-style-clay" class="active" aria-pressed="true" title="Sculpted Clay (Stylized/Tactile)">Sculpted Clay</button>
+      <button id="btn-style-atlas" aria-pressed="false" title="Clinical Atlas (Realistic/Medical Diagram)">Clinical Atlas</button>
+    </div>
+    <button id="btn-labels" class="ghost-btn" aria-pressed="false" aria-label="Toggle anatomical labels" title="Labels (L)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.5"/></svg><span>Labels</span></button>
+    <button id="btn-reset" class="ghost-btn" aria-label="Reset camera view" title="Reset view">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>Reset view</span></button>
+  </div>
+</header>
+
+<main>
+  <section id="viewport" aria-label="3D morphing viewer">
+    <canvas id="gl" aria-label="Interactive 3D model of external genitalia differentiation"></canvas>
+    <div id="gl-error" role="alert">Failed to load three.js. Check your internet connection and reload.</div>
+
+    <div id="labels" aria-hidden="true">
+      <svg id="leaders"></svg>
+    </div>
+    <div class="ruler" aria-hidden="true"><span>+10 mm</span><span>+5</span><span>0</span><span>&minus;5</span><span>&minus;10 mm</span></div>
+
+    <div class="hud-tl">
+      <div class="glass stage-card" aria-live="polite">
+        <div id="status-dot" class="dot"></div>
+        <div>
+          <div id="stage-title" class="stage-title"></div>
+          <div id="stage-sub" class="stage-sub"></div>
+        </div>
+        <span id="stage-pct" class="pct">0%</span>
+      </div>
+      <div id="info-card" class="glass info-card">
+        <div class="t"><span id="info-chip" class="chip"></span><span id="info-name"></span></div>
+        <div id="info-body" class="d"></div>
+      </div>
+    </div>
+
+    <div id="legend" class="glass legend">
+      <button id="legend-toggle" class="legend-head" aria-expanded="true"><span>Embryological Origin</span><span class="hint">Hover / click to trace homologues</span></button>
+      <div class="legend-list" id="legend-list"></div>
+    </div>
+
+    <div class="glass dock" role="group" aria-label="Playback controls">
+      <div class="dock-top">
+        <button id="btn-play" class="round play" aria-label="Play or pause (Space)" title="Play / Pause (Space)">
+          <svg id="ic-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>
+          <svg id="ic-pause" viewBox="0 0 24 24" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+        <button id="btn-loop" class="round loopb on" aria-pressed="true" aria-label="Toggle continuous loop" title="Continuous loop">
+          <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+        </button>
+        <div class="scrub">
+          <input id="scrubber" type="range" min="0" max="1000" value="0" aria-label="Developmental progress scrubber, 0 to 100 percent">
+          <div class="ticks">
+            <button data-t="0" title="Week 7 Bipotential">W7</button>
+            <button data-t="0.3333" style="left:33.33%" title="Female homology">&#9792; 46,XX</button>
+            <button data-t="0.6667" style="left:66.67%" title="Male homology">&#9794; 46,XY</button>
+            <button data-t="1" style="left:100%" title="Return to Week 7">W7 &#8635;</button>
+          </div>
+        </div>
+      </div>
+      <div class="stages">
+        <button id="jump-0" class="stg active" data-t="0"><i></i>Week 7 Bipotential</button>
+        <button id="jump-1" class="stg" data-t="0.3333"><i></i>Female Homology</button>
+        <button id="jump-2" class="stg" data-t="0.6667"><i></i>Male Homology</button>
+      </div>
+    </div>
+  </section>
+
+  <aside id="panel" aria-label="Educational panel">
+    <button id="btn-panel" class="ptab" aria-label="Collapse or expand educational panel" aria-expanded="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+    <div class="inner">
+      <div>
+        <h2>Embryological Organogenesis</h2>
+      </div>
+      <p class="pdesc">Reference summary of external genital homology, in the style of standard embryology texts (e.g. Langman's Medical Embryology).</p>
+
+      <div class="acc open"><button aria-expanded="true">Anatomical Homology Matrix<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="acc-body">
+          <p>Click a row to trace that structure through all stages.</p>
+          <table id="matrix"><thead><tr><th>Tissue</th><th>Week 7</th><th>Female</th><th>Male</th></tr></thead><tbody></tbody></table>
+        </div></div>
+
+      <div class="acc"><button aria-expanded="false">Tissue Origins &amp; Derivatives<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="acc-body" id="tissue-descs"></div></div>
+
+      <div class="acc open"><button aria-expanded="true">Endocrine Drivers (SRY &rarr; DHT)<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="acc-body">
+          <div class="step"><strong>1. SRY</strong> on the Y chromosome (Yp11.2) drives testis determination and Sertoli / Leydig cell differentiation.</div>
+          <div class="step"><strong>2. Testosterone.</strong> Fetal Leydig cells secrete testosterone from about Week 8.</div>
+          <div class="step"><strong>3. 5&alpha;-reductase type 2</strong> converts testosterone to <strong>dihydrotestosterone (DHT)</strong> within the target tissues of the external genitalia.</div>
+          <div class="step"><strong>4. Androgen receptor signalling.</strong> DHT drives tubercle elongation, medial fusion of the urethral folds (enclosing the spongy urethra) and inferomedial fusion of the labioscrotal swellings.</div>
+          <div class="step f"><strong>5. Absence of DHT</strong> yields the default 46,XX pattern: a short tubercle, unfused folds (labia minora) and unfused swellings (labia majora) bordering an open vestibule.</div>
+        </div></div>
+
+      <div class="acc"><button aria-expanded="false">Clinical Correlates<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="acc-body">
+          <div class="callout"><h5>Hypospadias</h5>Incomplete fusion of the urethral folds leaves the external urethral meatus on the ventral aspect of the penis.</div>
+          <div class="callout"><h5>Androgen insensitivity syndrome (AIS)</h5>46,XY with a nonfunctional androgen receptor; target tissues do not respond to testosterone or DHT, giving a female-typical external phenotype (complete AIS).</div>
+          <div class="callout"><h5>5&alpha;-reductase type 2 deficiency</h5>Reduced conversion of testosterone to DHT causes under-virilization of the external genitalia in 46,XY individuals.</div>
+          <div class="callout"><h5>Congenital adrenal hyperplasia (46,XX)</h5>Fetal adrenal androgen excess virilizes the external genitalia (clitoromegaly, partial labioscrotal fusion).</div>
+        </div></div>
+
+      <p class="notice">Schematic educational model; not to anatomical scale. The Female&rarr;Male segment is a comparative homology morph, not a biological transition.</p>
+    </div>
+  </aside>
+</main>
+
+<script>
+(function () {
+'use strict';
+
+if (typeof THREE === 'undefined' || typeof gsap === 'undefined' || !THREE.OrbitControls) {
+  document.getElementById('gl-error').style.display = 'grid';
+  return;
+}
+
+// ===== 1. CONSTANTS & TERMINOLOGY =====
+const TERMS = {
+  s0: 'Bipotential primordial genitalia (Gestational Week 7)',
+  female: 'Female Phenotypic Differentiation (46,XX pathway)',
+  male: 'Male Phenotypic Differentiation (46,XY / Androgen-mediated pathway)',
+  tissues: {
+    genitalTubercle: {
+      name: 'Genital Tubercle', color: '#8B5CF6', atlas: '#E9BBA3',
+      s0: 'Primordial phallus', female: 'Glans clitoridis', male: 'Glans penis',
+      desc: 'Midline phallic precursor cranial to the cloacal membrane. Without DHT it forms the glans clitoridis and hood; with DHT it elongates into the penile shaft and glans.'
+    },
+    urogenitalFolds: {
+      name: 'Urogenital / Urethral Folds', color: '#F59E0B', atlas: '#D9958A',
+      s0: 'Unfused medial folds', female: 'Labia minora', male: 'Ventral penile raphe & spongy urethra',
+      desc: 'Paired medial folds flanking the urogenital groove. They remain unfused as the labia minora, or fuse ventrally along the midline (penile raphe) enclosing the spongy urethra.'
+    },
+    labioscrotalSwellings: {
+      name: 'Labioscrotal / Genital Swellings', color: '#10B981', atlas: '#E3B09A',
+      s0: 'Lateral genital swellings', female: 'Labia majora', male: 'Scrotum & scrotal raphe',
+      desc: 'Paired lateral swellings. They enlarge laterally as the labia majora, or migrate inferomedially and fuse at the scrotal raphe to form the scrotal sac.'
+    },
+    urogenitalSinus: {
+      name: 'Urogenital Sinus / Groove', color: '#475569', atlas: '#6b2f35',
+      s0: 'Urogenital groove', female: 'Vestibule (urethral & vaginal orifices)', male: 'Spongy (penile) urethra'
+    ,
+      desc: 'Central groove between the urogenital folds. It broadens into the vestibule with separate urethral and vaginal orifices, or is closed over by fold fusion to form the spongy urethra.'
+    }
+  }
+};
+const KEYS = Object.keys(TERMS.tissues);
+
+// ===== 2. STATE =====
+const state = {
+  t: 0, playing: true, loop: true, style: 'clay', highlight: null, pinned: null,
+  duration: 18, dwell: 1.2, tweening: false, scrubbing: false, labels: false, derived: null
+};
+const CAM = { pos: [0, 0.3, 8.0], target: [0, -0.15, 0.2] };
+
+// ===== 3. PARAMETER KEYFRAMES =====
+const P = {};
+P.S0 = {
+  tubercle:  { L:0.95, r0:0.28, taper:0.20, tilt:0.16, bend:0.00, glans:0.06, glansU:0.85, glansW:0.10, corona:0.00, hood:0.00 },
+  folds:     { dOpen:0.28, dPeri:0.30, fuse:0.00, a:0.07,  b:0.09,  periLen:1.30, phalicFrac:0.30, ruffle:0.00 },
+  swellings: { x:0.95, y:-0.90, z:-0.05, sx:0.45, sy:0.80, sz:0.35, rotZ:0.15, merge:0 },
+  sinus:     { sx:0.14, sy:0.75, y:-0.80, depth:0.5, open:1, orifices:0, meatus:0 }
+};
+P.F = {
+  tubercle:  { L:0.45, r0:0.17, taper:0.10, tilt:0.05, bend:0.00, glans:0.38, glansU:0.82, glansW:0.12, corona:0.00, hood:0.55 },
+  folds:     { dOpen:0.40, dPeri:0.52, fuse:0.00, a:0.04,  b:0.11,  periLen:1.20, phalicFrac:0.15, ruffle:0.35 },
+  swellings: { x:1.00, y:-0.80, z:-0.02, sx:0.30, sy:1.20, sz:0.30, rotZ:0.05, merge:0 },
+  sinus:     { sx:0.28, sy:0.70, y:-0.70, depth:0.8, open:1, orifices:1, meatus:0 }
+};
+P.M = {
+  tubercle:  { L:1.85, r0:0.30, taper:0.00, tilt:0.00, bend:0.12, glans:0.25, glansU:0.90, glansW:0.07, corona:0.22, hood:0.00 },
+  folds:     { dOpen:0.30, dPeri:0.30, fuse:1.00, a:0.06,  b:0.07,  periLen:0.70, phalicFrac:0.70, ruffle:0.00 },
+  swellings: { x:0.40, y:-1.45, z:0.05, sx:0.65, sy:0.80, sz:0.62, rotZ:0.00, merge:1 },
+  sinus:     { sx:0.02, sy:0.10, y:-0.80, depth:0.0, open:0, orifices:0, meatus:1 }
+};
+
+// ===== 4. MATH HELPERS =====
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const gauss = (x, mu, s) => Math.exp(-0.5 * ((x - mu) / s) ** 2);
+const easeInOutCubic = x => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+
+function mixParams(A, B, k) {
+  const out = {};
+  for (const key in A) out[key] = (typeof A[key] === 'number') ? lerp(A[key], B[key], k) : mixParams(A[key], B[key], k);
+  return out;
+}
+function sampleParams(t) {
+  t = clamp(t, 0, 1);
+  const seg = Math.min(2, Math.floor(t * 3));
+  const local = easeInOutCubic(t * 3 - seg);               // cubic ease per segment
+  const [A, B] = [[P.S0, P.F], [P.F, P.M], [P.M, P.S0]][seg];
+  return mixParams(A, B, local);
+}
+
+// Tubercle centerline and radius profile
+function axisPoint(u, p) {
+  return [0, p.L * u * Math.cos(p.tilt) - p.bend * u * u * p.L * 0.5, p.L * u * Math.sin(p.tilt) + 0.15 * u];
+}
+function tubRadius(u, p, v) {
+  let r = p.r0 * (1 - p.taper * u);
+  r += p.r0 * p.glans * gauss(u, p.glansU, p.glansW);          // bulbous glans
+  r += p.r0 * p.corona * gauss(u, p.glansU - 0.12, 0.03);      // corona (male)
+  if (v !== undefined && Math.sin(v) < 0)                      // dorsal hood (female)
+    r += p.hood * 0.5 * p.r0 * gauss(u, 0.62, 0.18) * (-Math.sin(v));
+  const uc = 0.88;                                             // rounded distal cap
+  if (u > uc) r *= Math.sqrt(Math.max(0, 1 - ((u - uc) / (1 - uc)) ** 2));
+  return Math.max(r, 1e-4);
+}
+
+// ===== 5. SCENE SETUP =====
+const viewport = document.getElementById('viewport');
+const canvas = document.getElementById('gl');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 60);
+camera.position.set(...CAM.pos);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+
+const controls = new THREE.OrbitControls(camera, canvas);
+Object.assign(controls, { enableDamping: true, dampingFactor: 0.08, minDistance: 3, maxDistance: 12, enablePan: true });
+controls.target.set(...CAM.target);
+controls.update();
+
+const ambient = new THREE.AmbientLight(0xfff5ea, 0.25);
+const hemi = new THREE.HemisphereLight(0xfff1e0, 0x2a2f45, 0.7);
+const sun = new THREE.DirectionalLight(0xfff4e6, 0.9); sun.position.set(3, 4, 5);
+const rim = new THREE.PointLight(0x8b5cf6, 0.35, 14); rim.position.set(-4, 2, -2);
+scene.add(ambient, hemi, sun, rim);
+
+// Cosmetic perineal base (not pickable)
+const baseGeo = new THREE.PlaneGeometry(7, 6.5, 24, 24);
+{
+  const a = baseGeo.attributes.position;
+  for (let i = 0; i < a.count; i++) a.setZ(i, -0.06 - 0.035 * a.getX(i) ** 2 - 0.008 * a.getY(i) ** 2);
+  baseGeo.computeVertexNormals();
+}
+const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 1 });
+const perinealBase = new THREE.Mesh(baseGeo, baseMat);
+perinealBase.position.set(0, -0.8, 0);
+scene.add(perinealBase);
+
+const depthRings = new THREE.Group();
+[0.9, 1.8, 2.7].forEach(r => {
+  const m = new THREE.Mesh(new THREE.RingGeometry(r - 0.01, r, 72),
+    new THREE.MeshBasicMaterial({ color: 0x475569, transparent: true, opacity: 0.25, side: THREE.DoubleSide }));
+  m.position.set(0, -0.8, -0.05); depthRings.add(m);
+});
+depthRings.visible = false; scene.add(depthRings);
+
+// ===== 6. GEOMETRY BUILDERS (topology built once) =====
+const dynamicGeometries = [];
+const pickables = [];
+
+function makeGridGeometry(nU, nV) {
+  const g = new THREE.BufferGeometry();
+  const n = (nU + 1) * (nV + 1);
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3).setUsage(THREE.DynamicDrawUsage));
+  g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(n * 3), 3).setUsage(THREE.DynamicDrawUsage));
+  const idx = [];
+  for (let i = 0; i < nU; i++) for (let j = 0; j < nV; j++) {
+    const a = i * (nV + 1) + j, b = (i + 1) * (nV + 1) + j, c = (i + 1) * (nV + 1) + j + 1, d = i * (nV + 1) + j + 1;
+    idx.push(a, b, d, b, c, d);                       // outward CCW winding
+  }
+  g.setIndex(idx);
+  g.userData = { nU, nV };
+  dynamicGeometries.push(g);
+  return g;
+}
+
+// Average normals across the duplicated seam column
+function fixSeam(g) {
+  const { nU, nV } = g.userData, nrm = g.attributes.normal;
+  for (let i = 0; i <= nU; i++) {
+    const a = i * (nV + 1), b = a + nV;
+    const x = (nrm.getX(a) + nrm.getX(b)) / 2, y = (nrm.getY(a) + nrm.getY(b)) / 2, z = (nrm.getZ(a) + nrm.getZ(b)) / 2;
+    nrm.setXYZ(a, x, y, z); nrm.setXYZ(b, x, y, z);
+  }
+}
+
+// Materials ------------------------------------------------------------
+const emissiveBase = { clay: 0.08, atlas: 0.05 };
+function stdMat(hex, rough) { return new THREE.MeshStandardMaterial({ color: hex, roughness: rough, metalness: 0, emissive: hex, emissiveIntensity: 0.08 }); }
+const MAT = { clay: {}, atlas: {} };
+for (const k of ['genitalTubercle', 'urogenitalFolds', 'labioscrotalSwellings']) {
+  MAT.clay[k] = stdMat(new THREE.Color(TERMS.tissues[k].color), 0.72);
+  MAT.atlas[k] = stdMat(new THREE.Color(TERMS.tissues[k].atlas), 0.5);
+  MAT.atlas[k].emissiveIntensity = emissiveBase.atlas;
+}
+
+// Inverted-hull outline (shares geometry with its source mesh)
+const outlineMeshes = [];   // {mesh, tissue}
+function makeOutline(geometry, tissue, offset, parent) {
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { off: { value: offset } },
+    vertexShader: 'uniform float off; void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position + normal * off, 1.0); }',
+    fragmentShader: 'void main(){ gl_FragColor = vec4(0.231, 0.114, 0.114, 1.0); }',
+    side: THREE.BackSide
+  });
+  const m = new THREE.Mesh(geometry, mat);
+  m.visible = false;
+  (parent || scene).add(m);
+  outlineMeshes.push({ mesh: m, tissue });
+  return m;
+}
+
+// --- TubercleMesh ---
+const nU_T = 40, nV_T = 32;
+const geoTub = makeGridGeometry(nU_T, nV_T);
+const TubercleMesh = new THREE.Mesh(geoTub, MAT.clay.genitalTubercle);
+TubercleMesh.name = 'TubercleMesh'; TubercleMesh.userData.tissue = 'genitalTubercle';
+scene.add(TubercleMesh); pickables.push(TubercleMesh);
+makeOutline(geoTub, 'genitalTubercle', 0.022);
+
+// --- UrogenitalFoldsMesh (paired tubes + ventral raphe tube) ---
+const nU_F = 48, nV_F = 14;
+const geoFoldL = makeGridGeometry(nU_F, nV_F), geoFoldR = makeGridGeometry(nU_F, nV_F), geoRaphe = makeGridGeometry(nU_F, 10);
+const UrogenitalFoldsMesh = new THREE.Group(); UrogenitalFoldsMesh.name = 'UrogenitalFoldsMesh';
+const foldL = new THREE.Mesh(geoFoldL, MAT.clay.urogenitalFolds);
+const foldR = new THREE.Mesh(geoFoldR, MAT.clay.urogenitalFolds);
+const rapheMesh = new THREE.Mesh(geoRaphe, MAT.clay.urogenitalFolds);
+rapheMesh.name = 'VentralRapheMesh';
+[foldL, foldR, rapheMesh].forEach(m => { m.userData.tissue = 'urogenitalFolds'; UrogenitalFoldsMesh.add(m); pickables.push(m); });
+scene.add(UrogenitalFoldsMesh);
+makeOutline(geoFoldL, 'urogenitalFolds', 0.016, UrogenitalFoldsMesh);
+makeOutline(geoFoldR, 'urogenitalFolds', 0.016, UrogenitalFoldsMesh);
+
+// --- LabioscrotalSwellingsMesh (paired spheres + scrotal bridge + raphe) ---
+const sphereGeo = new THREE.SphereGeometry(1, 40, 28);
+const LabioscrotalSwellingsMesh = new THREE.Group(); LabioscrotalSwellingsMesh.name = 'LabioscrotalSwellingsMesh';
+const swL = new THREE.Mesh(sphereGeo, MAT.clay.labioscrotalSwellings);
+const swR = new THREE.Mesh(sphereGeo, MAT.clay.labioscrotalSwellings);
+const bridge = new THREE.Mesh(sphereGeo, MAT.clay.labioscrotalSwellings);
+const scrotalRaphe = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 1, 12), MAT.clay.labioscrotalSwellings);
+[swL, swR, bridge, scrotalRaphe].forEach(m => { m.userData.tissue = 'labioscrotalSwellings'; LabioscrotalSwellingsMesh.add(m); pickables.push(m); });
+scene.add(LabioscrotalSwellingsMesh);
+[swL, swR, bridge].forEach(m => makeOutline(sphereGeo, 'labioscrotalSwellings', 0.04, m));
+
+// --- SinusOpeningMesh (slot + recess + orifices + meatus) ---
+const gradCanvas = document.createElement('canvas'); gradCanvas.width = gradCanvas.height = 128;
+{
+  const c = gradCanvas.getContext('2d'), g = c.createRadialGradient(64, 64, 4, 64, 64, 62);
+  g.addColorStop(0, 'rgba(11,18,32,1)'); g.addColorStop(0.6, 'rgba(30,41,59,0.95)');
+  g.addColorStop(0.85, 'rgba(71,85,105,0.7)'); g.addColorStop(1, 'rgba(71,85,105,0)');
+  c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+}
+const gradTex = new THREE.CanvasTexture(gradCanvas);
+function sinusMat(hex, extra) {
+  return new THREE.MeshBasicMaterial(Object.assign({ color: hex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }, extra));
+}
+const slotMat = sinusMat(0xffffff, { map: gradTex });
+const recessMat = sinusMat(0x05080f), urMat = sinusMat(0x0b1220), vagMat = sinusMat(0x05080f), meatMat = sinusMat(0x0b1220);
+const rimUrMat = sinusMat(0x94a3b8), rimVagMat = sinusMat(0x94a3b8);
+const SinusOpeningMesh = new THREE.Group(); SinusOpeningMesh.name = 'SinusOpeningMesh';
+const slot = new THREE.Mesh(new THREE.CircleGeometry(1, 48), slotMat);
+const recess = new THREE.Mesh(new THREE.CircleGeometry(0.55, 40), recessMat); recess.position.z = 0.002;
+const urethral = new THREE.Mesh(new THREE.CircleGeometry(0.045, 24), urMat);
+const urRim = new THREE.Mesh(new THREE.RingGeometry(0.047, 0.065, 24), rimUrMat);
+const vaginal = new THREE.Mesh(new THREE.CircleGeometry(0.10, 32), vagMat);
+const vagRim = new THREE.Mesh(new THREE.RingGeometry(0.103, 0.13, 32), rimVagMat);
+const meatus = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), meatMat);
+slot.add(recess);
+[slot, urethral, urRim, vaginal, vagRim, meatus].forEach(m => { m.userData.tissue = 'urogenitalSinus'; SinusOpeningMesh.add(m); });
+pickables.push(slot);
+scene.add(SinusOpeningMesh);
+
+// ===== 7. updateMorph(t) =====
+// Fold centerline C(s); s = 0 at the glans end. side = -1 / +1 (0 = midline raphe)
+function foldPoint(s, side, f, tp, lift) {
+  const fuseLocal = clamp(f.fuse * 1.4 - 0.4 * s, 0, 1);
+  const pf = f.phalicFrac;
+  if (s <= pf) {                                   // phallic portion: ventral surface of tubercle
+    const u = 0.92 * (1 - s / pf);
+    const ax = axisPoint(u, tp), r = tubRadius(u, tp);
+    const dx = Math.min(lerp(f.dOpen, 0.008, fuseLocal), r * 0.85);
+    const zs = 0.92 * Math.sqrt(Math.max(r * r - dx * dx, 0));
+    return [side * dx, ax[1], ax[2] + zs + lift];
+  }
+  const q = (s - pf) / (1 - pf);                   // perineal portion
+  const ax0 = axisPoint(0, tp), r0 = tubRadius(0, tp);
+  const dBase = lerp(Math.min(f.dOpen, r0 * 0.85), f.dPeri, smoothstep(0, 0.35, q));
+  const dx = lerp(dBase, 0.008, fuseLocal);
+  const zStart = 0.92 * Math.sqrt(Math.max(r0 * r0 - Math.min(f.dOpen, r0 * 0.85) ** 2, 0));
+  return [side * dx, ax0[1] - q * f.periLen, lerp(zStart, 0.03, smoothstep(0, 0.4, q)) + lift];
+}
+
+function writeTubercle(p) {
+  const pos = geoTub.attributes.position; let k = 0;
+  for (let i = 0; i <= nU_T; i++) {
+    const u = i / nU_T, ax = axisPoint(u, p);
+    for (let j = 0; j <= nV_T; j++) {
+      const v = j / nV_T * Math.PI * 2, r = tubRadius(u, p, v);
+      pos.setXYZ(k++, ax[0] + r * Math.cos(v), ax[1], ax[2] + 0.92 * r * Math.sin(v));
+    }
+  }
+}
+
+function writeTube(geo, side, f, tp, a0, b0, lift) {
+  const pos = geo.attributes.position, { nU, nV } = geo.userData; let k = 0;
+  const eps = 0.012;
+  for (let i = 0; i <= nU; i++) {
+    const s = i / nU;
+    const c = foldPoint(s, side, f, tp, lift);
+    const s2 = s + eps > 1 ? s - eps : s + eps, c2 = foldPoint(s2, side, f, tp, lift);
+    let T = [c2[0] - c[0], c2[1] - c[1], c2[2] - c[2]];
+    if (s2 < s) T = T.map(x => -x);
+    const tl = Math.hypot(...T) || 1; T = T.map(x => x / tl);
+    // Fixed reference normal N0 = +Z (no Frenet twisting): Bn = T x N0, N = Bn x T
+    let Bn = [T[1], -T[0], 0]; const bl = Math.hypot(...Bn) || 1; Bn = Bn.map(x => x / bl);
+    const N = [Bn[1] * T[2] - Bn[2] * T[1], Bn[2] * T[0] - Bn[0] * T[2], Bn[0] * T[1] - Bn[1] * T[0]];
+    const taper = Math.pow(Math.sin(Math.PI * s), 0.3);
+    const a = a0 * (1 + f.ruffle * 0.25 * Math.sin(18 * s)) * taper, b = b0 * taper;
+    for (let j = 0; j <= nV; j++) {
+      const ph = j / nV * Math.PI * 2, ca = a * Math.cos(ph), sb = b * Math.sin(ph);
+      pos.setXYZ(k++, c[0] + Bn[0] * ca + N[0] * sb, c[1] + Bn[1] * ca + N[1] * sb, c[2] + Bn[2] * ca + N[2] * sb);
+    }
+  }
+}
+
+function applySwellings(s) {
+  swL.position.set(-s.x, s.y, s.z); swL.scale.set(s.sx, s.sy, s.sz); swL.rotation.z = -s.rotZ;
+  swR.position.set(s.x, s.y, s.z);  swR.scale.set(s.sx, s.sy, s.sz); swR.rotation.z = s.rotZ;
+  const m = s.merge;
+  bridge.visible = m > 0.01;
+  bridge.position.set(0, s.y, s.z);
+  bridge.scale.set(Math.max(1e-3, s.x * 1.1 * m), Math.max(1e-3, s.sy * 0.85 * m), Math.max(1e-3, s.sz * 0.9 * m));
+  scrotalRaphe.visible = m > 0.3;
+  scrotalRaphe.scale.set(m, s.sy * 1.5 * m + 1e-3, m);
+  scrotalRaphe.position.set(0, s.y, s.z + s.sz * 0.9 * m + 0.01);
+}
+
+function applySinus(s, tp) {
+  SinusOpeningMesh.position.set(0, 0, 0);
+  slot.position.set(0, s.y, 0.03); slot.scale.set(Math.max(1e-3, s.sx), Math.max(1e-3, s.sy), 1);
+  recess.scale.set(Math.max(1e-3, s.depth), Math.max(1e-3, s.depth), 1);
+  const o = Math.max(1e-3, s.orifices);
+  urethral.position.set(0, s.y + 0.30 * s.sy, 0.045); urRim.position.copy(urethral.position);
+  vaginal.position.set(0, s.y - 0.14 * s.sy, 0.045);  vagRim.position.copy(vaginal.position);
+  [urethral, urRim, vaginal, vagRim].forEach(m => { m.scale.set(o, o, 1); m.visible = s.orifices > 0.03; });
+  const mu = 0.94, ax = axisPoint(mu, tp), r = tubRadius(mu, tp);
+  meatus.position.set(0, ax[1], ax[2] + 0.92 * r + 0.012);
+  meatus.scale.set(Math.max(1e-3, 0.45 * s.meatus), Math.max(1e-3, 1.3 * s.meatus), 1);
+  meatus.visible = s.meatus > 0.03;
+}
+
+let lastT = -1;
+function updateMorph(t) {
+  const p = sampleParams(t);
+  writeTubercle(p.tubercle);
+  writeTube(geoFoldL, -1, p.folds, p.tubercle, p.folds.a, p.folds.b, 0);
+  writeTube(geoFoldR,  1, p.folds, p.tubercle, p.folds.a, p.folds.b, 0);
+  const rf = smoothstep(0.55, 1, p.folds.fuse);
+  writeTube(geoRaphe, 0, p.folds, p.tubercle, 0.03 * rf, 0.035 * rf, p.folds.b * 0.55 * rf);
+  applySwellings(p.swellings);
+  applySinus(p.sinus, p.tubercle);
+  for (const g of dynamicGeometries) {
+    g.attributes.position.needsUpdate = true;
+    g.computeVertexNormals(); fixSeam(g);
+    g.attributes.normal.needsUpdate = true;
+    g.computeBoundingSphere(); g.computeBoundingBox();     // keeps raycasting + culling correct
+  }
+  state.derived = p;
+}
+
+// ===== 8. MATERIALS & STYLE SWITCHING =====
+const styleSets = {
+  clay:  { amb: 0.25, hemi: 0.7, sun: 0.9, rim: 0.35, base: 0x1e293b, slot: 0xffffff, rimCol: 0x94a3b8 },
+  atlas: { amb: 0.35, hemi: 0.9, sun: 0.6, rim: 0.0,  base: 0xc9bfb0, slot: 0xd9959f, rimCol: 0xb5656f }
+};
+const meshTissue = [
+  [TubercleMesh, 'genitalTubercle'], [foldL, 'urogenitalFolds'], [foldR, 'urogenitalFolds'], [rapheMesh, 'urogenitalFolds'],
+  [swL, 'labioscrotalSwellings'], [swR, 'labioscrotalSwellings'], [bridge, 'labioscrotalSwellings'], [scrotalRaphe, 'labioscrotalSwellings']
+];
+function setStyle(name) {
+  state.style = name;
+  const atlas = name === 'atlas', S = styleSets[name];
+  meshTissue.forEach(([m, k]) => { m.material = MAT[name][k]; });
+  baseMat.color.setHex(S.base); baseMat.roughness = atlas ? 0.85 : 1;
+  slotMat.color.setHex(S.slot); rimUrMat.color.setHex(S.rimCol); rimVagMat.color.setHex(S.rimCol);
+  depthRings.visible = atlas;
+  gsap.to(ambient, { intensity: S.amb, duration: 0.4 }); gsap.to(hemi, { intensity: S.hemi, duration: 0.4 });
+  gsap.to(sun, { intensity: S.sun, duration: 0.4 }); gsap.to(rim, { intensity: S.rim, duration: 0.4 });
+  viewport.classList.toggle('atlas', atlas); document.body.classList.toggle('atlas-on', atlas);
+  document.getElementById('btn-style-clay').classList.toggle('active', !atlas);
+  document.getElementById('btn-style-atlas').classList.toggle('active', atlas);
+  document.getElementById('btn-style-clay').setAttribute('aria-pressed', String(!atlas));
+  document.getElementById('btn-style-atlas').setAttribute('aria-pressed', String(atlas));
+  setLabels(atlas);                       // Clinical Atlas shows labels by default
+}
+
+// Per-frame visuals: highlight pulse + dimming (persists across all morph stages)
+function applyVisuals(time) {
+  const hl = state.highlight, p = state.derived; if (!p) return;
+  const pulse = 0.25 + 0.2 * Math.sin(time * 4);
+  for (const k of ['genitalTubercle', 'urogenitalFolds', 'labioscrotalSwellings']) {
+    const dim = (hl && hl !== k) ? 0.3 : 1;
+    for (const set of ['clay', 'atlas']) {
+      const m = MAT[set][k];
+      m.transparent = dim < 1; m.opacity = dim; m.depthWrite = dim === 1;
+      m.emissiveIntensity = (hl === k) ? pulse : emissiveBase[set];
+    }
+  }
+  const dimS = (hl && hl !== 'urogenitalSinus') ? 0.3 : 1;
+  const boost = hl === 'urogenitalSinus' ? 0.5 + 0.5 * Math.sin(time * 4) : 0;
+  slotMat.opacity = p.sinus.open * dimS;
+  slotMat.color.setHex(styleSets[state.style].slot).lerp(new THREE.Color(0x8aa4c8), boost * 0.6);
+  recessMat.opacity = p.sinus.depth * 0.7 * p.sinus.open * dimS;
+  const o = clamp(p.sinus.orifices, 0, 1) * dimS;
+  urMat.opacity = vagMat.opacity = rimUrMat.opacity = rimVagMat.opacity = o;
+  meatMat.opacity = clamp(p.sinus.meatus, 0, 1) * dimS;
+  // Outlines are hidden for dimmed tissues / clay style
+  outlineMeshes.forEach(({ mesh, tissue }) => { mesh.visible = state.style === 'atlas' && (!hl || hl === tissue); });
+}
+
+// ===== 9. INTERACTION (raycast, highlight, legend) =====
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2(); let mouseIn = false, downPos = null;
+
+canvas.addEventListener('pointermove', e => {
+  const r = canvas.getBoundingClientRect();
+  mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); mouseIn = true;
+});
+canvas.addEventListener('pointerleave', () => { mouseIn = false; if (!state.pinned) setHighlight(null); });
+canvas.addEventListener('pointerdown', e => { downPos = [e.clientX, e.clientY]; });
+canvas.addEventListener('click', e => {
+  if (downPos && Math.hypot(e.clientX - downPos[0], e.clientY - downPos[1]) > 5) return;   // was an orbit drag
+  const k = pickAt(mouse, e);
+  togglePin(k);
+});
+function pickAt(m, e) {
+  if (e) { const r = canvas.getBoundingClientRect(); m = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); }
+  raycaster.setFromCamera(m, camera);
+  const hits = raycaster.intersectObjects(pickables.filter(o => o.visible), false);
+  return hits.length ? hits[0].object.userData.tissue : null;
+}
+function togglePin(k) {
+  if (!k || state.pinned === k) { state.pinned = null; setHighlight(null); } else { state.pinned = k; setHighlight(k); }
+}
+
+// Legend + matrix + panel content (generated from TERMS)
+const legendList = document.getElementById('legend-list');
+KEYS.forEach(k => {
+  const t = TERMS.tissues[k], b = document.createElement('button');
+  b.className = 'lrow'; b.dataset.tissue = k; b.setAttribute('aria-label', t.name);
+  b.innerHTML = '<span class="chips"><span class="chip" style="background:' + t.color + '"></span><span class="chip atl" style="background:' + t.atlas + '"></span></span>' +
+    '<span class="ltxt"><span class="lname">' + t.name + '</span><span class="lder" id="der-' + k + '"></span></span>';
+  b.addEventListener('mouseenter', () => { if (!state.pinned) setHighlight(k); });
+  b.addEventListener('mouseleave', () => { if (!state.pinned) setHighlight(null); });
+  b.addEventListener('focus', () => { if (!state.pinned) setHighlight(k); });
+  b.addEventListener('click', () => togglePin(k));
+  legendList.appendChild(b);
+});
+const matrixBody = document.querySelector('#matrix tbody');
+KEYS.forEach(k => {
+  const t = TERMS.tissues, tr = document.createElement('tr'); tr.dataset.tissue = k; tr.style.cursor = 'pointer';
+  tr.innerHTML = '<td><span class="tchip" style="background:' + t[k].color + '"></span><strong>' + t[k].name + '</strong></td><td>' + t[k].s0 + '</td><td>' + t[k].female + '</td><td>' + t[k].male + '</td>';
+  tr.addEventListener('click', () => togglePin(k));
+  matrixBody.appendChild(tr);
+});
+document.getElementById('tissue-descs').innerHTML = KEYS.map(k => {
+  const t = TERMS.tissues[k];
+  return '<div class="tissue-desc" style="--c:' + t.color + '"><h5>' + t.name + '</h5><p>' + t.desc + '</p><p><strong>Homologues:</strong> ' + t.female + ' (female) / ' + t.male + ' (male)</p></div>';
+}).join('');
+
+function stageKey(t) { return (t < 1 / 6 || t > 5 / 6) ? 's0' : (t < 0.5 ? 'female' : 'male'); }
+
+function renderInfoCard() {
+  const k = state.highlight, card = document.getElementById('info-card');
+  if (!k) { card.classList.remove('show'); return; }
+  const t = TERMS.tissues[k], cur = stageKey(state.t);
+  const b = (txt, key) => '<b class="' + (cur === key ? 'now' : '') + '">' + txt + '</b>';
+  card.classList.add('show');
+  document.getElementById('info-chip').style.background = t.color;
+  document.getElementById('info-name').textContent = t.name;
+  document.getElementById('info-body').innerHTML = 'Week 7: ' + b(t.s0, 's0') + '<br>Female: ' + b(t.female, 'female') + ' &middot; Male: ' + b(t.male, 'male');
+}
+function setHighlight(k) {
+  state.highlight = k;
+  document.querySelectorAll('.lrow').forEach(r => r.classList.toggle('active', r.dataset.tissue === k));
+  document.querySelectorAll('#matrix tbody tr').forEach(r => r.classList.toggle('hl', r.dataset.tissue === k));
+  renderInfoCard();
+}
+
+// ===== 10. UI BINDINGS =====
+const $ = id => document.getElementById(id);
+const scrubber = $('scrubber');
+
+function updatePlayIcon() { $('ic-play').style.display = state.playing ? 'none' : 'block'; $('ic-pause').style.display = state.playing ? 'block' : 'none'; }
+function setPlaying(v) {
+  state.playing = v;
+  if (v && !state.loop && state.t >= 1) { state.t = 0; state.dwell = 0; }
+  updatePlayIcon();
+}
+$('btn-play').addEventListener('click', () => setPlaying(!state.playing));
+$('btn-loop').addEventListener('click', () => {
+  state.loop = !state.loop; $('btn-loop').classList.toggle('on', state.loop); $('btn-loop').setAttribute('aria-pressed', String(state.loop));
+});
+
+scrubber.addEventListener('pointerdown', () => { state.scrubbing = true; gsap.killTweensOf(state); state.tweening = false; });
+['pointerup', 'pointercancel', 'blur', 'change'].forEach(ev => scrubber.addEventListener(ev, () => { state.scrubbing = false; }));
+scrubber.addEventListener('input', () => { gsap.killTweensOf(state); state.tweening = false; state.t = scrubber.value / 1000; });
+
+function jumpTo(target) {
+  gsap.killTweensOf(state);
+  state.tweening = true;
+  gsap.to(state, { t: target, duration: 1.6, ease: 'power2.inOut', onComplete: () => { state.tweening = false; state.dwell = state.dwell > 0 ? state.dwell : 1.2; } });
+}
+document.querySelectorAll('.stg, .ticks button').forEach(b => b.addEventListener('click', () => jumpTo(parseFloat(b.dataset.t))));
+
+$('btn-style-clay').addEventListener('click', () => setStyle('clay'));
+$('btn-style-atlas').addEventListener('click', () => setStyle('atlas'));
+$('btn-labels').addEventListener('click', () => setLabels(!state.labels));
+$('btn-reset').addEventListener('click', () => {
+  gsap.to(camera.position, { x: CAM.pos[0], y: CAM.pos[1], z: CAM.pos[2], duration: 1, ease: 'power2.out' });
+  gsap.to(controls.target, { x: CAM.target[0], y: CAM.target[1], z: CAM.target[2], duration: 1, ease: 'power2.out' });
+});
+
+const panel = $('panel');
+$('btn-panel').addEventListener('click', () => {
+  panel.classList.toggle('collapsed'); $('btn-panel').setAttribute('aria-expanded', String(!panel.classList.contains('collapsed')));
+});
+document.querySelectorAll('.acc > button').forEach(b => b.addEventListener('click', () => {
+  const a = b.parentElement; a.classList.toggle('open'); b.setAttribute('aria-expanded', String(a.classList.contains('open')));
+}));
+$('legend-toggle').addEventListener('click', () => {
+  const lg = $('legend'); lg.classList.toggle('collapsed'); lg.classList.toggle('userOpen', !lg.classList.contains('collapsed'));
+  $('legend-toggle').setAttribute('aria-expanded', String(!lg.classList.contains('collapsed')));
+});
+if (window.innerWidth <= 900) { panel.classList.add('collapsed'); $('btn-panel').setAttribute('aria-expanded', 'false'); }
+
+window.addEventListener('keydown', e => {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' && e.code !== 'Space' && !/^[123sSlL]$/.test(e.key)) return;
+  if (e.code === 'Space') { if (tag === 'BUTTON') return; e.preventDefault(); setPlaying(!state.playing); }
+  else if (e.key === '1') jumpTo(0);
+  else if (e.key === '2') jumpTo(1 / 3);
+  else if (e.key === '3') jumpTo(2 / 3);
+  else if (e.key === 's' || e.key === 'S') setStyle(state.style === 'clay' ? 'atlas' : 'clay');
+  else if (e.key === 'l' || e.key === 'L') setLabels(!state.labels);
+});
+
+// Stage badge / legend derivative text
+let lastStageSig = '';
+function updateUIFromT() {
+  const t = state.t, pct = Math.round(t * 100);
+  $('stage-pct').textContent = pct + '%';
+  scrubber.value = Math.round(t * 1000);
+  const near = [0, 1 / 3, 2 / 3, 1].findIndex(m => Math.abs(t - m) <= 0.04);
+  let title, sub, color;
+  if (near === 0 || near === 3) { title = TERMS.s0; sub = 'Week 7 \u00b7 indifferent stage'; color = '#8B5CF6'; }
+  else if (near === 1) { title = TERMS.female; sub = 'Week 12+ \u00b7 default pathway (absence of DHT)'; color = '#EC4899'; }
+  else if (near === 2) { title = TERMS.male; sub = 'Week 12+ \u00b7 DHT-driven fusion and elongation'; color = '#3B82F6'; }
+  else {
+    const seg = Math.min(2, Math.floor(t * 3));
+    title = 'Transition: ' + ['Week 7 \u2192 Female (46,XX)', 'Female \u2192 Male (46,XY)', 'Male \u2192 Week 7'][seg];
+    sub = seg === 1 ? 'Comparative homology morph (not a biological transition)' : 'Morphological interpolation';
+    color = ['#F472B6', '#60A5FA', '#A78BFA'][seg];
+  }
+  const sig = title + sub;
+  if (sig !== lastStageSig) {
+    lastStageSig = sig;
+    $('stage-title').textContent = title; $('stage-sub').textContent = sub;
+    const d = $('status-dot'); d.style.background = color; d.style.color = color;
+  }
+  document.querySelectorAll('.stg').forEach((b, i) => b.classList.toggle('active', near === i || (i === 0 && near === 3)));
+  document.querySelectorAll('.ticks button').forEach((b, i) => b.classList.toggle('on', near === i));
+  const sk = stageKey(t);
+  KEYS.forEach(k => { $('der-' + k).textContent = '\u2192 ' + TERMS.tissues[k][sk]; });
+  lblEls && KEYS.forEach(k => { const txt = sk === 's0' ? TERMS.tissues[k].name : TERMS.tissues[k][sk]; if (lblEls[k].textContent !== txt) lblEls[k].textContent = txt; });
+  if (state.highlight) renderInfoCard();
+}
+
+// ===== 11. LABEL OVERLAY =====
+const labelsEl = $('labels'), leaders = $('leaders');
+const lblEls = {}, lineEls = {}, dotEls = {};
+KEYS.forEach(k => {
+  const d = document.createElement('div'); d.className = 'lbl'; d.dataset.tissue = k; d.textContent = TERMS.tissues[k].name;
+  d.addEventListener('mouseenter', () => { if (!state.pinned) setHighlight(k); });
+  d.addEventListener('mouseleave', () => { if (!state.pinned) setHighlight(null); });
+  d.addEventListener('click', () => togglePin(k));
+  labelsEl.appendChild(d); lblEls[k] = d;
+  const ns = 'http://www.w3.org/2000/svg';
+  const l = document.createElementNS(ns, 'line'); l.setAttribute('class', 'leader');
+  const c = document.createElementNS(ns, 'circle'); c.setAttribute('class', 'ldot'); c.setAttribute('r', 3);
+  leaders.appendChild(l); leaders.appendChild(c); lineEls[k] = l; dotEls[k] = c;
+});
+function setLabels(v) {
+  state.labels = v; labelsEl.classList.toggle('show', v);
+  $('btn-labels').classList.toggle('on', v); $('btn-labels').setAttribute('aria-pressed', String(v));
+}
+const _v = new THREE.Vector3();
+function updateLabels() {
+  if (!state.labels || !state.derived) return;
+  const p = state.derived, w = viewport.clientWidth, h = viewport.clientHeight;
+  const tp = axisPoint(0.97, p.tubercle), tr = tubRadius(0.9, p.tubercle);
+  const fp = foldPoint(p.folds.phalicFrac + (1 - p.folds.phalicFrac) * 0.5, 1, p.folds, p.tubercle, 0);
+  const anchors = {
+    genitalTubercle: [tp[0], tp[1], tp[2] + tr * 0.9],
+    urogenitalFolds: [fp[0], fp[1], fp[2] + 0.05],
+    labioscrotalSwellings: [p.swellings.x + p.swellings.sx * 0.7, p.swellings.y, p.swellings.z + 0.1],
+    urogenitalSinus: [0, p.sinus.y, 0.06]
+  };
+  KEYS.forEach(k => {
+    _v.set(...anchors[k]).project(camera);
+    const el = lblEls[k], ln = lineEls[k], dt = dotEls[k];
+    if (_v.z > 1) { el.style.display = 'none'; ln.style.display = 'none'; dt.style.display = 'none'; return; }
+    el.style.display = ''; ln.style.display = ''; dt.style.display = '';
+    const sx = (_v.x * 0.5 + 0.5) * w, sy = (-_v.y * 0.5 + 0.5) * h;
+    // Fixed screen column: tissues on the right half go to the right margin, otherwise left
+    const right = k === 'labioscrotalSwellings' || k === 'urogenitalFolds' || k === 'genitalTubercle';
+    const ew = el.offsetWidth;
+    const tx = right ? w - ew - 14 : 14;
+    const ty = { genitalTubercle: 0.24, urogenitalFolds: 0.42, labioscrotalSwellings: 0.62, urogenitalSinus: 0.5 }[k] * h;
+    el.style.transform = 'translate3d(' + tx + 'px,' + ty + 'px,0)';
+    ln.setAttribute('x1', sx); ln.setAttribute('y1', sy); ln.setAttribute('x2', right ? tx : tx + ew); ln.setAttribute('y2', ty + 12);
+    dt.setAttribute('cx', sx); dt.setAttribute('cy', sy);
+  });
+}
+
+// ===== 12. MAIN LOOP =====
+function resize() {
+  const w = viewport.clientWidth, h = viewport.clientHeight; if (!w || !h) return;
+  renderer.setSize(w, h, false); camera.aspect = w / h;
+  // Keep the whole anatomy in frame on narrow viewports
+  camera.fov = w / h < 0.9 ? 40 / Math.max(0.55, w / h * 1.05) : 40;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(viewport);
+
+function advanceT(dt) {
+  if (state.dwell > 0) { state.dwell -= dt; return; }
+  const prev = state.t; let nt = prev + dt / state.duration;
+  for (const m of [1 / 3, 2 / 3, 1]) {
+    if (prev < m - 1e-9 && nt >= m) { nt = m; state.dwell = 1.2; break; }   // dwell on each keyframe
+  }
+  if (nt >= 1) {
+    if (state.loop) { nt = 0; }                         // t=1 is identical to t=0
+    else { nt = 1; state.playing = false; updatePlayIcon(); }
+  }
+  state.t = nt;
+}
+
+let last = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (document.hidden) { last = now; return; }
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (state.playing && !state.scrubbing && !state.tweening) advanceT(dt);
+  if (state.t !== lastT) { updateMorph(state.t); lastT = state.t; updateUIFromT(); }
+  if (mouseIn && !state.pinned) {
+    const k = pickAt(mouse);
+    if (k !== state.highlight) setHighlight(k);
+  }
+  applyVisuals(now / 1000);
+  controls.update();
+  renderer.render(scene, camera);
+  updateLabels();
+}
+
+resize();
+setStyle('clay');
+updatePlayIcon();
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>
