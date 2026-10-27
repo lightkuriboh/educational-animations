@@ -46,7 +46,8 @@ Demonstrates how male and female anatomical structures diverge from identical **
 - **Core:** Pure HTML5, Vanilla JavaScript (ES6+), and Vanilla CSS (Modern dark-mode medical laboratory theme with frosted glassmorphism).
 - **3D Graphics:** [Three.js (r128)](https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js) and `OrbitControls.js`.
 - **Motion & Tweening:** [GSAP 3](https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js).
-- **Zero Build Step:** Fully self-contained in a single `index.html` file; runs offline or on any static web host.
+- **Modular Architecture:** Clean ES module separation for internationalization (`i18n/`), mathematical morphing profiles (`params/`, `math/`), procedural meshes (`mesh/`), and UI controllers (`ui/`), with dedicated stylesheet (`css/style.css`).
+- **Zero Build Step:** Native browser ES modules running directly on GitHub Pages or any static web server without bundlers or compilers.
 
 ---
 
