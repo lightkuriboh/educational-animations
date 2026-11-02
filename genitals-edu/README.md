@@ -21,13 +21,15 @@ Demonstrates how male and female anatomical structures diverge from identical **
 
 ## ✨ Features & Visual Engine
 
-- **Procedural Mathematical Mesh (Option B Morphing):**
+- **Procedural Mathematical Mesh (Zero-GLTF Morphing):**
   - Generates coordinate modifiers dynamically without external `.gltf` / `.obj` files.
-  - Smooth non-linear cubic easing transitions across the continuous 3-phase cycle:
-    1. *Stage 0 (Week 7)*: Bipotential primordial tissue.
-    2. *Stage 1 (46,XX)*: Clitoral refinement, unfused labia minora, expanded vestibule.
-    3. *Stage 2 (46,XY)*: Phallic elongation, urethral fold zippering, scrotal sac fusion.
-    4. *Stage 3*: Seamless reversion to Week 7 primordium.
+  - **3D Lithotomy Pelvic Backdrop & Opening Thighs:** Anatomically shaped lower torso in lithotomy position featuring two abducted 3D thighs, mons pubis adipose elevation, genitocrural/inguinal creases, perineal body, and puckered anal verge with procedural edge alpha fading.
+  - **Textbook Anatomical Organ Profiles (Langman & Netter references):**
+    - *Genital Tubercle / Phallus*: Ogive domed glans, overhanging coronal sulcus, ventral corpus spongiosum ridge, clitoral glans with dedicated clitoral hood (prepuce) cowl mesh that smoothly collapses when `hood ~ 0`.
+    - *Urogenital Folds*: Blade-like mucosal labia minora with lateral flare and ruffle, converging posteriorly into the fourchette; male midline urethral zippering along the ventral shaft to the coronal sulcus.
+    - *Labioscrotal Swellings*: Asymmetric rooted labia majora (`Z_ROOT = -0.40`) tapering towards the posterior commissure; male ovoid scrotal sac with median scrotal raphe sulcus and fundus notch.
+    - *Urogenital Sinus*: Deepened vestibule/introitus with hymenal caruncles, dark urethral and vaginal orifice decals (`introitusHole`, `urethralSlit`), and glans apex slit meatus.
+  - Smooth non-linear cubic easing transitions across the continuous developmental and arousal cycles.
 - **Dual Visual Rendering Styles:**
   - **Sculpted Clay (Stylized/Tactile):** High roughness (`0.70`), soft subsurface-like ambient lighting, color-coded by embryological tissue origin.
   - **Clinical Atlas (Realistic/Medical Diagram):** Anatomic skin and mucosal tones, shared-geometry inverted-hull line-art ink contours, and depth scale ruler.
@@ -35,9 +37,12 @@ Demonstrates how male and female anatomical structures diverge from identical **
   - 0–100% interactive timeline scrubber with auto-dwell at anatomical milestones.
   - Discrete stage jump buttons with GSAP easing (`Week 7 Bipotential`, `Female Homology`, `Male Homology`).
   - Cross-stage persistent homology highlighting (pulsing emissive glow across homologous structures).
+  - Physiological response simulation (vasocongestion, tumescence, and erection morphs).
   - 3D screen-projected leader lines and dynamic anatomical label badges.
   - Collapsible clinical side panel with endocrine cascade details (*SRY*, testosterone, 5α-reductase, DHT) and clinical pathology correlates (Hypospadias, AIS, 5α-RD, CAH).
   - Keyboard shortcuts (`Space` to Play/Pause, `1`/`2`/`3` for Stage jumps, `S` for Style toggle, `L` for Labels).
+- **Automated Quality & Clearance Verification:**
+  - Headless Node validation suite (`tools/check-clearance.mjs`) verifying organ clearance against thighs and pelvic floor across 21 developmental and arousal scenarios.
 
 ---
 
