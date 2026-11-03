@@ -17,14 +17,14 @@ globalThis.window = { THREE: {} };
 const ROOT = new URL('../js/', import.meta.url).href;
 
 const { P } = await import(ROOT + 'params/keyframes.js');
-const { sampleParams } = await import(ROOT + 'params/sampler.js');
+const { sampleParams, getTubFrame } = await import(ROOT + 'params/sampler.js');
 const { smoothstep } = await import(ROOT + 'math/helpers.js');
 const { writeTubercle } = await import(ROOT + 'mesh/tubercle.js');
 const { writeHood } = await import(ROOT + 'mesh/hood.js');
-const { writeTube } = await import(ROOT + 'mesh/folds.js');
+const { writeTube, foldPoint } = await import(ROOT + 'mesh/folds.js');
 const { writeSwelling, writeScrotalRaphe } = await import(ROOT + 'mesh/swellings.js');
 const { writeSinus3D } = await import(ROOT + 'mesh/sinus.js');
-const { torsoStatic, torsoMons, torsoHeight, thighPoint, thighClearance } = await import(ROOT + 'mesh/bodyField.js');
+const { torsoStatic, torsoMons, torsoHeight, thighPoint, thighClearance, THIGH } = await import(ROOT + 'mesh/bodyField.js');
 
 function createMockGrid(nU, nV) {
   const n = (nU + 1) * (nV + 1);
@@ -236,6 +236,29 @@ test('Clearance Verification across developmental timeline and arousal states', 
       }
     }
   }
+});
+
+// 7. Male Raphe Termination
+test('Male raphe ends proximal to the coronal sulcus', () => {
+  const p = sampleParams(1, { advMode: true, arousal: 0 });
+  const rapheTop = foldPoint(0, 0, p.folds, p.tubercle, 0)[1];
+  const corona = getTubFrame(p.tubercle.glansU - 0.05, p.tubercle).pos[1];
+  assert(rapheTop < corona, `raphe top y=${rapheTop} must be < corona y=${corona}`);
+});
+
+// 8. Thigh Framing and Perspective Distance
+test('Thigh framing: opaque thigh stays away from the camera and frames the organs', () => {
+  const camZ = 7.8, f = Math.tan(20 * Math.PI / 180), aspect = 1.75;
+  let ndcMin = Infinity, zMax = -Infinity;
+  for (let t = THIGH.t0; t <= 0.6; t += 0.02) {         // 0.6 = end of the opaque part (alpha fade starts at v 0.6)
+    for (let ph = 0; ph < Math.PI * 2; ph += 0.05) {
+      const P = thighPoint(1, t, ph);
+      zMax = Math.max(zMax, P[2]);
+      ndcMin = Math.min(ndcMin, P[0] / (camZ - P[2]) / f / aspect);
+    }
+  }
+  assert(zMax < 1.2, `thigh comes too close to the camera (zMax=${zMax.toFixed(2)})`);
+  assert(ndcMin > 0.12 && ndcMin < 0.45, `thigh medial silhouette NDC ${ndcMin.toFixed(2)} out of [0.12, 0.45]`);
 });
 
 console.log(`\n🎉 All ${passedTests}/${totalTests} unit tests passed successfully!\n`);

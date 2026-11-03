@@ -23,10 +23,10 @@ Demonstrates how male and female anatomical structures diverge from identical **
 
 - **Procedural Mathematical Mesh (Zero-GLTF Morphing):**
   - Generates coordinate modifiers dynamically without external `.gltf` / `.obj` files.
-  - **3D Lithotomy Pelvic Backdrop & Opening Thighs:** Anatomically shaped lower torso in lithotomy position featuring two abducted 3D thighs, mons pubis adipose elevation, genitocrural/inguinal creases, perineal body, and puckered anal verge with procedural edge alpha fading.
+  - **3D Lithotomy Pelvic Backdrop & Opening Thighs:** Anatomically shaped lower torso in lithotomy position featuring two abducted 3D thighs, mons pubis adipose elevation, genitocrural/inguinal creases, perineal body, and puckered anal verge with baked cavity ambient occlusion and procedural edge alpha fading.
   - **Textbook Anatomical Organ Profiles (Langman & Netter references):**
     - *Genital Tubercle / Phallus*: Ogive domed glans, overhanging coronal sulcus, ventral corpus spongiosum ridge, clitoral glans with dedicated clitoral hood (prepuce) cowl mesh that smoothly collapses when `hood ~ 0`.
-    - *Urogenital Folds*: Blade-like mucosal labia minora with lateral flare and ruffle, converging posteriorly into the fourchette; male midline urethral zippering along the ventral shaft to the coronal sulcus.
+    - *Urogenital Folds*: Blade-like mucosal labia minora with lateral flare and ruffle, converging posteriorly into the fourchette; male midline urethral zippering along the ventral shaft ending cleanly at the frenulum.
     - *Labioscrotal Swellings*: Asymmetric rooted labia majora (`Z_ROOT = -0.40`) tapering towards the posterior commissure; male ovoid scrotal sac with median scrotal raphe sulcus and fundus notch.
     - *Urogenital Sinus*: Deepened vestibule/introitus with hymenal caruncles, dark urethral and vaginal orifice decals (`introitusHole`, `urethralSlit`), and glans apex slit meatus.
   - Smooth non-linear cubic easing transitions across the continuous developmental and arousal cycles.
@@ -37,12 +37,13 @@ Demonstrates how male and female anatomical structures diverge from identical **
   - 0–100% interactive timeline scrubber with auto-dwell at anatomical milestones.
   - Discrete stage jump buttons with GSAP easing (`Week 7 Bipotential`, `Female Homology`, `Male Homology`).
   - Cross-stage persistent homology highlighting (pulsing emissive glow across homologous structures).
+  - **Per-Stage Auto-Framing Camera:** Dynamically eases camera distance and target center to fit the organ bounding box at each stage, automatically pausing on user orbit/zoom and resuming on Reset View.
   - Physiological response simulation (vasocongestion, tumescence, and erection morphs).
   - 3D screen-projected leader lines and dynamic anatomical label badges.
   - Collapsible clinical side panel with endocrine cascade details (*SRY*, testosterone, 5α-reductase, DHT) and clinical pathology correlates (Hypospadias, AIS, 5α-RD, CAH).
   - Keyboard shortcuts (`Space` to Play/Pause, `1`/`2`/`3` for Stage jumps, `S` for Style toggle, `L` for Labels).
 - **Automated Quality & Clearance Verification:**
-  - Headless Node validation suite (`tools/check-clearance.mjs`) verifying organ clearance against thighs and pelvic floor across 21 developmental and arousal scenarios.
+  - Headless Node validation suite (`tools/run-unit-tests.mjs` and `tools/check-clearance.mjs`) verifying schema uniformity, numerical stability, clitoral hood collapse, male raphe termination, thigh perspective framing, and non-clipping clearances across 21 developmental and arousal scenarios.
 
 ---
 
@@ -64,6 +65,10 @@ Simply open `index.html` in any modern web browser, or serve it using Python:
 # Clone the repository
 git clone git@github.com:lightkuriboh/educational-animations.git
 cd educational-animations
+
+# Run automated tests
+node --no-warnings genitals-edu/tools/run-unit-tests.mjs
+node --no-warnings genitals-edu/tools/check-clearance.mjs
 
 # Start a local static server
 python3 -m http.server 8080
