@@ -38,12 +38,13 @@ Demonstrates how male and female anatomical structures diverge from identical **
   - Discrete stage jump buttons with GSAP easing (`Week 7 Bipotential`, `Female Homology`, `Male Homology`).
   - Cross-stage persistent homology highlighting (pulsing emissive glow across homologous structures).
   - **Per-Stage Auto-Framing Camera:** Dynamically eases camera distance and target center to fit the organ bounding box at each stage, automatically pausing on user orbit/zoom and resuming on Reset View.
+  - **Bilateral Infographic Labels:** Contextual 3D screen-projected leader lines and dynamic anatomical label badges distributed bilaterally to eliminate edge crowding.
+  - **Seamless Studio Environment:** Unified WebGL background and extended $16 \times 14$ lithotomy base with soft quadratic alpha falloff, eliminating geometric cutout borders.
   - Physiological response simulation (vasocongestion, tumescence, and erection morphs).
-  - 3D screen-projected leader lines and dynamic anatomical label badges.
   - Collapsible clinical side panel with endocrine cascade details (*SRY*, testosterone, 5α-reductase, DHT) and clinical pathology correlates (Hypospadias, AIS, 5α-RD, CAH).
   - Keyboard shortcuts (`Space` to Play/Pause, `1`/`2`/`3` for Stage jumps, `S` for Style toggle, `L` for Labels).
 - **Automated Quality & Clearance Verification:**
-  - Headless Node validation suite (`tools/run-unit-tests.mjs` and `tools/check-clearance.mjs`) verifying schema uniformity, numerical stability, clitoral hood collapse, male raphe termination, thigh perspective framing, and non-clipping clearances across 21 developmental and arousal scenarios.
+  - Headless Node validation suite (`tools/run-unit-tests.mjs` and `tools/check-clearance.mjs`) verifying schema uniformity, numerical stability, clitoral hood collapse, male raphe termination and penoscrotal continuity, discrete Week 7 primordia, thigh perspective framing, and non-clipping clearances across 21 developmental and arousal scenarios.
 
 ---
 

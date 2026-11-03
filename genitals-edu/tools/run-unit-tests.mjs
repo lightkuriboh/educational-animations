@@ -261,4 +261,25 @@ test('Thigh framing: opaque thigh stays away from the camera and frames the orga
   assert(ndcMin > 0.12 && ndcMin < 0.45, `thigh medial silhouette NDC ${ndcMin.toFixed(2)} out of [0.12, 0.45]`);
 });
 
+// 9. Week 7 Swellings Discrete Primordia (no perineal bridge)
+test('Week 7 swellings remain discrete lateral primordia (no perineal bridge)', () => {
+  const sL = createMockGrid(60, 36);
+  writeSwelling(sL, -1, P.S0.swellings);
+  // Assert that all vertices of the left swelling stay on the left side (x <= -0.20)
+  for (let k = 0; k < sL.attributes.position.count; k++) {
+    const x = sL.attributes.position.getX(k);
+    assert(x <= -0.20, `W7 left swelling breached medial clearance: x=${x} > -0.20`);
+  }
+});
+
+// 10. Penoscrotal Raphe Continuity
+test('Penoscrotal raphe continuity in male adult', () => {
+  const p = sampleParams(1, { advMode: true, arousal: 0 });
+  const penileRapheEnd = foldPoint(1.0, 0, p.folds, p.tubercle, 0);
+  // Scrotal raphe start
+  const F = { y: p.swellings.yStart, z: p.swellings.zBase + p.swellings.zBulge * 0.6 };
+  const dy = Math.abs(penileRapheEnd[1] - F.y);
+  assert(dy < 0.25, `Gap between penile raphe end and scrotal raphe start: dy=${dy}`);
+});
+
 console.log(`\n🎉 All ${passedTests}/${totalTests} unit tests passed successfully!\n`);
